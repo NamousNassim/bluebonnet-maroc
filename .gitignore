@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+backend/src/generated/
+# Environment files hold secrets; only the *.example templates are committed.
+.env
+.env.*
+!.env.example
+!.env.prod.example
+secrets/
+*.pem
+*:Zone.Identifier

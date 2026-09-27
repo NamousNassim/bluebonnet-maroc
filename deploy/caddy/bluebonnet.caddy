@@ -1,0 +1,29 @@
+# Bluebonnet sites, imported by the host's Caddy (see deploy/README.md). Containers are reached by
+# name over the external "shared-edge" Docker network. Certificates are issued automatically.
+
+www.bluebonnetmaroc.com {
+	redir https://bluebonnetmaroc.com{uri} permanent
+}
+
+(bluebonnet_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+}
+
+bluebonnetmaroc.com {
+	import bluebonnet_headers
+	encode zstd gzip
+	reverse_proxy bluebonnet-frontend:3000
+}
+
+api.bluebonnetmaroc.com {
+	import bluebonnet_headers
+	encode zstd gzip
+	reverse_proxy bluebonnet-api:4000
+}

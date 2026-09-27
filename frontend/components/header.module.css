@@ -1,0 +1,35 @@
+.header { position: sticky; top: 0; z-index: 40; background: rgba(250, 249, 243, 0.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.bar { display: flex; align-items: center; gap: 24px; min-height: 76px; }
+.brand { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.brandText { display: grid; line-height: 1.1; }
+.brandName { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.32em; color: var(--cobalt); text-transform: uppercase; }
+.brandTag { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+.nav { display: flex; gap: 28px; margin-inline: auto; }
+.nav a { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--charcoal); padding-block: 6px; border-bottom: 1px solid transparent; }
+.nav a:hover, .nav a[aria-current="page"] { color: var(--cobalt); border-color: var(--cobalt); }
+.actions { display: flex; align-items: center; gap: 6px; }
+.iconButton { position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; border: 0; background: transparent; color: var(--cobalt); cursor: pointer; }
+.iconButton:hover { background: var(--lavender-soft); }
+.count { position: absolute; top: 2px; inset-inline-end: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--cobalt); color: var(--ivory); font-size: 0.68rem; display: grid; place-items: center; }
+.locale { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-pill); overflow: hidden; font-size: 0.72rem; }
+.locale button { border: 0; background: transparent; padding: 5px 9px; cursor: pointer; color: var(--muted); }
+.locale button[aria-pressed="true"] { background: var(--cobalt); color: var(--ivory); }
+.search { border-top: 1px solid var(--line); padding-block: 14px; }
+.search form { display: flex; gap: 10px; }
+.search input { flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 0 18px; background: #fff; }
+.menuButton { display: none; }
+.drawer { display: none; }
+@media (max-width: 960px) {
+  .nav { display: none; }
+  .menuButton { display: inline-grid; }
+  .bar { gap: 8px; min-height: 64px; }
+  .brand { margin-inline: auto; }
+  .brandTag { display: none; }
+  .brandName { font-size: 0.95rem; letter-spacing: 0.24em; }
+  .localeDesktop { display: none; }
+  .drawer { display: block; position: fixed; inset: 64px 0 0; background: var(--ivory); padding: 24px var(--gutter); border-top: 1px solid var(--line); overflow-y: auto; }
+  .drawer nav { display: grid; gap: 4px; }
+  .drawer a { display: block; padding: 14px 0; border-bottom: 1px solid var(--line); font-family: var(--font-display); font-size: 1.3rem; color: var(--cobalt); }
+  .drawer .locale { margin-top: 24px; }
+}
+@media (max-width: 420px) { .brand svg { width: 38px; height: 38px; } }

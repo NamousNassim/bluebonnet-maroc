@@ -1,0 +1,45 @@
+import { z } from "zod";
+
+const flag = z.enum(["true", "false"]).default("false").transform((value) => value === "true");
+const cents = (fallback: number) => z.coerce.number().int().min(0).default(fallback);
+
+/**
+ * Every setting comes from the environment and is validated at startup. StartEntreprise credentials
+ * are backend-only: nothing here is ever sent to the browser.
+ */
+const schema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PORT: z.coerce.number().int().default(4000),
+  DATABASE_URL: z.string().min(1),
+  PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
+  CART_COOKIE_SECURE: flag,
+  SHIPPING_FLAT_CENTS: cents(3000),
+  FREE_SHIPPING_THRESHOLD_CENTS: cents(80000),
+  CHECKOUT_ENABLED: flag,
+  RESERVATION_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+  LOW_STOCK_DISPLAY_THRESHOLD: z.coerce.number().int().min(1).default(5),
+  AVAILABILITY_CACHE_SECONDS: z.coerce.number().int().min(0).default(30),
+  STARTENTREPRISE_INTEGRATION_ENABLED: flag,
+  STARTENTREPRISE_API_URL: z.string().url().optional(),
+  STARTENTREPRISE_TOKEN_URL: z.string().url().optional(),
+  STARTENTREPRISE_CLIENT_ID: z.string().optional(),
+  STARTENTREPRISE_CLIENT_SECRET: z.string().optional(),
+  STARTENTREPRISE_TIMEOUT_MS: z.coerce.number().int().min(500).default(5000),
+}).superRefine((value, context) => {
+  if (!value.STARTENTREPRISE_INTEGRATION_ENABLED) return;
+  for (const key of ["STARTENTREPRISE_API_URL", "STARTENTREPRISE_TOKEN_URL", "STARTENTREPRISE_CLIENT_ID", "STARTENTREPRISE_CLIENT_SECRET"] as const) {
+    if (!value[key]) context.addIssue({ code: "custom", path: [key], message: "required when STARTENTREPRISE_INTEGRATION_ENABLED=true" });
+  }
+});
+
+export type AppConfig = z.infer<typeof schema>;
+export const APP_CONFIG = Symbol("APP_CONFIG");
+
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+  const result = schema.safeParse(env);
+  if (!result.success) {
+    const problems = result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
+    throw new Error(`Invalid configuration: ${problems}`);
+  }
+  return result.data;
+}

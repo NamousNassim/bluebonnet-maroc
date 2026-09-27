@@ -1,0 +1,78 @@
+# Bluebonnet production stack — lives in /opt/bluebonnet, separate from StartEntreprise.
+#   docker compose -f deploy/compose.prod.yml --env-file secrets/bluebonnet.env up -d --build
+# Nothing publishes a host port. The existing Caddy reaches frontend and API through the external
+# "shared-edge" network; PostgreSQL is only on the internal network.
+name: bluebonnet
+
+services:
+  bluebonnet-postgres:
+    image: postgres:17-alpine
+    container_name: bluebonnet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bluebonnet
+      POSTGRES_USER: bluebonnet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bluebonnet -d bluebonnet"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  bluebonnet-api:
+    build: ../backend
+    container_name: bluebonnet-api
+    restart: unless-stopped
+    depends_on:
+      bluebonnet-postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://bluebonnet:${POSTGRES_PASSWORD}@bluebonnet-postgres:5432/bluebonnet
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://bluebonnetmaroc.com}
+      CART_COOKIE_SECURE: "true"
+      SHIPPING_FLAT_CENTS: ${SHIPPING_FLAT_CENTS:-3000}
+      FREE_SHIPPING_THRESHOLD_CENTS: ${FREE_SHIPPING_THRESHOLD_CENTS:-80000}
+      CHECKOUT_ENABLED: ${CHECKOUT_ENABLED:-false}
+      RESERVATION_TTL_SECONDS: ${RESERVATION_TTL_SECONDS:-900}
+      LOW_STOCK_DISPLAY_THRESHOLD: ${LOW_STOCK_DISPLAY_THRESHOLD:-5}
+      AVAILABILITY_CACHE_SECONDS: ${AVAILABILITY_CACHE_SECONDS:-30}
+      STARTENTREPRISE_INTEGRATION_ENABLED: ${STARTENTREPRISE_INTEGRATION_ENABLED:-false}
+      STARTENTREPRISE_API_URL: ${STARTENTREPRISE_API_URL:-}
+      STARTENTREPRISE_TOKEN_URL: ${STARTENTREPRISE_TOKEN_URL:-}
+      STARTENTREPRISE_CLIENT_ID: ${STARTENTREPRISE_CLIENT_ID:-}
+      STARTENTREPRISE_CLIENT_SECRET: ${STARTENTREPRISE_CLIENT_SECRET:-}
+      STARTENTREPRISE_TIMEOUT_MS: ${STARTENTREPRISE_TIMEOUT_MS:-5000}
+    # internal: database. shared-edge: Caddy (api.bluebonnetmaroc.com) and outbound HTTPS to StartEntreprise.
+    networks: [internal, shared-edge]
+
+  bluebonnet-frontend:
+    build:
+      context: ../frontend
+      args:
+        INTERNAL_API_URL: http://bluebonnet-api:4000
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://bluebonnetmaroc.com}
+        IMAGE_HOST: ${IMAGE_HOST:-}
+    container_name: bluebonnet-frontend
+    restart: unless-stopped
+    depends_on:
+      bluebonnet-api:
+        condition: service_healthy
+    environment:
+      INTERNAL_API_URL: http://bluebonnet-api:4000
+      PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://bluebonnetmaroc.com}
+    networks: [internal, shared-edge]
+
+volumes:
+  postgres_data:
+
+networks:
+  # No "internal: true": the API needs egress to StartEntreprise. Only Postgres sits here alone.
+  internal:
+  shared-edge:
+    name: shared-edge
+    external: true

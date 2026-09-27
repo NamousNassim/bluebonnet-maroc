@@ -1,0 +1,54 @@
+.product { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 64px); align-items: start; }
+@media (max-width: 860px) { .product { grid-template-columns: 1fr; } }
+.gallery { display: grid; gap: 12px; }
+.mainImage { position: relative; aspect-ratio: 1 / 1; border-radius: var(--radius); overflow: hidden; background: var(--lavender-soft); border: 1px solid var(--line); }
+.mainImage img { object-fit: cover; }
+.thumbs { display: flex; gap: 10px; }
+.thumbs button { position: relative; width: 76px; height: 76px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--lavender-soft); padding: 0; cursor: pointer; }
+.thumbs button[aria-pressed="true"] { border-color: var(--cobalt); box-shadow: 0 0 0 2px var(--lavender); }
+.info { display: grid; gap: 16px; }
+.info p { margin: 0; }
+.info h1 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); }
+.subtitle { color: var(--muted); font-size: 1.05rem; }
+.price { font-size: 1.5rem; color: var(--cobalt); font-weight: 600; }
+.compare { margin-inline-start: 10px; font-size: 1rem; color: var(--muted); text-decoration: line-through; font-weight: 400; }
+.description { color: var(--charcoal); white-space: pre-line; }
+.meta { font-size: 0.85rem; color: var(--muted); display: grid; gap: 4px; }
+.buy { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-pill); background: #fff; }
+.stepper button { width: 42px; height: 44px; border: 0; background: transparent; cursor: pointer; color: var(--cobalt); font-size: 1.1rem; }
+.stepper button:disabled { color: var(--line); cursor: default; }
+.stepper output, .stepper input { min-width: 36px; width: 44px; text-align: center; border: 0; background: transparent; }
+.feedback { font-size: 0.88rem; }
+
+.cartLayout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start; }
+@media (max-width: 900px) { .cartLayout { grid-template-columns: 1fr; } }
+.lines { display: grid; gap: 12px; }
+.line { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; }
+.line.unavailableLine { border-color: #efd0d0; background: #fdf7f7; }
+.lineImage { position: relative; width: 96px; height: 96px; border-radius: 10px; overflow: hidden; background: var(--lavender-soft); }
+.lineInfo { display: grid; gap: 4px; min-width: 0; }
+.lineInfo a { font-family: var(--font-display); font-size: 1.05rem; color: var(--charcoal); }
+.lineActions { display: grid; justify-items: end; gap: 8px; }
+.lineTotal { font-weight: 600; color: var(--cobalt); }
+.link { border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 0.82rem; padding: 0; }
+@media (max-width: 560px) {
+  .line { grid-template-columns: 72px minmax(0, 1fr); }
+  .lineImage { width: 72px; height: 72px; }
+  .lineActions { grid-column: 1 / -1; grid-template-columns: auto 1fr auto; justify-items: start; align-items: center; }
+  .lineTotal { justify-self: end; }
+}
+.summary { position: sticky; top: 96px; display: grid; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+.summary h2 { font-size: 1.3rem; }
+.summary p { margin: 0; }
+.row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.95rem; }
+.totalRow { border-top: 1px solid var(--line); padding-top: 12px; font-weight: 600; color: var(--cobalt); font-size: 1.1rem; }
+.hint { font-size: 0.82rem; color: var(--muted); }
+.empty { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 64px 16px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+
+.form { display: grid; gap: 22px; }
+.fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; background: #fff; display: grid; gap: 14px; }
+.fieldset legend { font-family: var(--font-display); color: var(--cobalt); font-size: 1.15rem; padding-inline: 6px; }
+.twoColumns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 560px) { .twoColumns { grid-template-columns: 1fr; } }
+.full { grid-column: 1 / -1; }
