@@ -57,7 +57,7 @@ export function Header({ locale }: { locale: Locale }) {
           </svg>
         </button>
         <Link href="/" className={styles.brand} aria-label="Bluebonnet, accueil">
-          <Monogram size={46} />
+          <Monogram size={64} />
           <span className={styles.brandText}>
             <span className={styles.brandName}>Bluebonnet</span>
             <span className={styles.brandTag}>{t.brandTagline}</span>

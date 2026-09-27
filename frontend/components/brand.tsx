@@ -1,22 +1,6 @@
-/**
- * Brand marks drawn in SVG (from the coming-soon page): the BB monogram and bluebonnet motifs.
- * Pure markup, no JavaScript.
- */
-export function Monogram({ size = 52 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 120 120" aria-hidden="true">
-      <ellipse cx="60" cy="60" rx="46" ry="56.5" fill="#FAF9F3" stroke="#1E3A8A" strokeWidth="1.4" />
-      <ellipse cx="60" cy="60" rx="41" ry="51" fill="none" stroke="#8B8CFC" strokeWidth="0.7" />
-      <text x="60" y="62" textAnchor="middle" fontFamily="Georgia, serif" fontSize="34" fill="#1E3A8A" letterSpacing="-2">BB</text>
-      <g transform="translate(60 90)">
-        <path d="M0 -10 v18" stroke="#1E3A8A" strokeWidth="1.1" />
-        <ellipse cx="0" cy="-14" rx="5" ry="7" fill="#8B8CFC" />
-        <ellipse cx="-5" cy="-6" rx="3.4" ry="5" fill="#1E3A8A" transform="rotate(-30)" />
-        <ellipse cx="5" cy="-6" rx="3.4" ry="5" fill="#1E3A8A" transform="rotate(30)" />
-        <path d="M0 6 C-8 2 -12 6 -14 10 M0 6 C8 2 12 6 14 10" stroke="#1E3A8A" strokeWidth="1" fill="none" />
-      </g>
-    </svg>
-  );
+/** Official mark, served unchanged from /BlueBonnet.jpeg. */
+export function Monogram({ size = 64 }: { size?: number }) {
+  return <img src="/BlueBonnet.jpeg" alt="" height={size} />;
 }
 
 /** A bluebonnet sprig: stem, leaves and stacked blooms. */

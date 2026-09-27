@@ -1,6 +1,7 @@
 .header { position: sticky; top: 0; z-index: 40; background: rgba(250, 249, 243, 0.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .bar { display: flex; align-items: center; gap: 24px; min-height: 76px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.brand img { display: block; height: 64px; width: auto; }
 .brandText { display: grid; line-height: 1.1; }
 .brandName { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.32em; color: var(--cobalt); text-transform: uppercase; }
 .brandTag { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
@@ -24,6 +25,7 @@
   .menuButton { display: inline-grid; }
   .bar { gap: 8px; min-height: 64px; }
   .brand { margin-inline: auto; }
+  .brand img { height: 52px; }
   .brandTag { display: none; }
   .brandName { font-size: 0.95rem; letter-spacing: 0.24em; }
   .localeDesktop { display: none; }
@@ -32,4 +34,4 @@
   .drawer a { display: block; padding: 14px 0; border-bottom: 1px solid var(--line); font-family: var(--font-display); font-size: 1.3rem; color: var(--cobalt); }
   .drawer .locale { margin-top: 24px; }
 }
-@media (max-width: 420px) { .brand svg { width: 38px; height: 38px; } }
+@media (max-width: 420px) { .brand img { height: 44px; } }
