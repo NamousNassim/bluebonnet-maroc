@@ -5,7 +5,7 @@
 .mainImage img { object-fit: cover; }
 .thumbs { display: flex; gap: 10px; }
 .thumbs button { position: relative; width: 76px; height: 76px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--lavender-soft); padding: 0; cursor: pointer; }
-.thumbs button[aria-pressed="true"] { border-color: var(--cobalt); box-shadow: 0 0 0 2px var(--lavender); }
+.thumbs button[aria-pressed="true"] { border-color: var(--palette-2); box-shadow: 0 0 0 3px color-mix(in srgb, var(--palette-3) 28%, #fff); }
 .info { display: grid; gap: 16px; }
 .info p { margin: 0; }
 .info h1 { font-size: clamp(1.8rem, 3.4vw, 2.6rem); }

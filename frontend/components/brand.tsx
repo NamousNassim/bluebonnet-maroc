@@ -17,9 +17,9 @@ export function Sprig({ className, height = 240 }: { className?: string; height?
       ))}
       {blooms.map(([x, y, scale], index) => (
         <g key={index} transform={`translate(${x} ${y}) scale(${scale})`}>
-          <path d="M2 14 C-16 12 -22 -2 -12 -14 C-4 -20 10 -16 16 -6 C22 2 16 14 4 16Z" fill="#7953ff" />
-          <path d="M0 10 C-12 8 -16 -2 -8 -10 C-2 -4 6 0 4 10Z" fill="#1c1cff" />
-          <ellipse cx="4" cy="-4" rx="4.2" ry="2.6" fill="#bd88ff" />
+          <path d="M2 14 C-16 12 -22 -2 -12 -14 C-4 -20 10 -16 16 -6 C22 2 16 14 4 16Z" fill="currentColor" opacity="0.92" />
+          <path d="M0 10 C-12 8 -16 -2 -8 -10 C-2 -4 6 0 4 10Z" fill="currentColor" opacity="0.55" />
+          <ellipse cx="4" cy="-4" rx="4.2" ry="2.6" fill="#fff" />
         </g>
       ))}
     </svg>
