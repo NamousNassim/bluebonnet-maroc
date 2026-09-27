@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.svg" },
 };
 
-export const viewport: Viewport = { themeColor: "#1e3a8a" };
+export const viewport: Viewport = { themeColor: "#1c1cff" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { locale, t } = await getDictionary();

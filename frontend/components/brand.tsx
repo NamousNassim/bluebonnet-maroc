@@ -10,16 +10,16 @@ export function Sprig({ className, height = 240 }: { className?: string; height?
   ];
   return (
     <svg className={className} height={height} viewBox="-60 -150 120 260" aria-hidden="true">
-      <path d="M0 100 C-4 60 6 20 0 -130" stroke="#1E3A8A" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <path d="M0 100 C-4 60 6 20 0 -130" stroke="currentColor" strokeWidth="1.4" fill="none" strokeLinecap="round" />
       {[-60, -30, 28, 58].map((angle, index) => (
         <path key={angle} transform={`translate(0 ${80 - index * 6}) rotate(${angle})`} d="M0 0 C8 -22 14 -38 5 -62 C-2 -36 -6 -20 0 0Z"
-          fill="#8B8CFC" fillOpacity="0.45" stroke="#1E3A8A" strokeWidth="0.8" />
+          fill="currentColor" fillOpacity="0.35" stroke="currentColor" strokeWidth="0.8" />
       ))}
       {blooms.map(([x, y, scale], index) => (
         <g key={index} transform={`translate(${x} ${y}) scale(${scale})`}>
-          <path d="M2 14 C-16 12 -22 -2 -12 -14 C-4 -20 10 -16 16 -6 C22 2 16 14 4 16Z" fill="#8B8CFC" />
-          <path d="M0 10 C-12 8 -16 -2 -8 -10 C-2 -4 6 0 4 10Z" fill="#1E3A8A" />
-          <ellipse cx="4" cy="-4" rx="4.2" ry="2.6" fill="#FAF9F3" />
+          <path d="M2 14 C-16 12 -22 -2 -12 -14 C-4 -20 10 -16 16 -6 C22 2 16 14 4 16Z" fill="#7953ff" />
+          <path d="M0 10 C-12 8 -16 -2 -8 -10 C-2 -4 6 0 4 10Z" fill="#1c1cff" />
+          <ellipse cx="4" cy="-4" rx="4.2" ry="2.6" fill="#bd88ff" />
         </g>
       ))}
     </svg>

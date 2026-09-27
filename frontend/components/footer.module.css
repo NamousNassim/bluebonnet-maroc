@@ -1,9 +1,9 @@
-.footer { margin-top: 96px; background: var(--cobalt); color: var(--lavender); }
+.footer { margin-top: 96px; background: var(--palette-1); color: #fff; }
 .grid { display: grid; grid-template-columns: 1.4fr repeat(2, 1fr); gap: 40px; padding-block: 56px 32px; }
 .footer h2 { color: var(--ivory); font-size: 1.3rem; letter-spacing: 0.3em; text-transform: uppercase; }
 .footer h3 { color: var(--ivory); font-family: var(--font-text); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 14px; }
 .footer p { margin: 10px 0 0; max-width: 360px; font-size: 0.9rem; opacity: 0.85; }
 .footer ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; font-size: 0.9rem; }
 .footer a:hover { color: var(--ivory); text-decoration: underline; }
-.legal { border-top: 1px solid rgba(232, 230, 255, 0.2); padding-block: 18px; font-size: 0.78rem; opacity: 0.8; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.legal { border-top: 1px solid color-mix(in srgb, var(--palette-5) 55%, transparent); padding-block: 18px; font-size: 0.78rem; color: #fff; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 @media (max-width: 760px) { .grid { grid-template-columns: 1fr; gap: 28px; } }

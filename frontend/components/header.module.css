@@ -1,4 +1,4 @@
-.header { position: sticky; top: 0; z-index: 40; background: rgba(250, 249, 243, 0.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.header { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--palette-5) 16%, rgba(250, 249, 243, 0.94)); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .bar { display: flex; align-items: center; gap: 24px; min-height: 76px; }
 .brand { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .brand img { display: block; height: 64px; width: auto; }
