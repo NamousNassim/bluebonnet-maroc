@@ -33,6 +33,16 @@ describe("StartEntreprise adapter (contract v1, over HTTP)", () => {
     expect(standIn.tokenRequests).toBe(1);
   });
 
+  it("preserves response order and all real availability states", async () => {
+    const untracked = "33333333-3333-4333-8333-333333333333";
+    const unknown = "44444444-4444-4444-8444-444444444444";
+    standIn.setStock(A, 2);
+    standIn.setStock(B, 0);
+    standIn.setStock(untracked, 50, false);
+    const result = await gateway().availability([B, A, untracked, unknown], "states-123");
+    expect([...result.values()].map((item) => item.status)).toEqual(["OUT_OF_STOCK", "LOW_STOCK", "NOT_TRACKED", "NOT_REGISTERED"]);
+  });
+
   it("splits very large pages into batches of 100", async () => {
     const ids = Array.from({ length: 150 }, (_, index) => `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`);
     await gateway().availability(ids);
@@ -63,6 +73,13 @@ describe("StartEntreprise adapter (contract v1, over HTTP)", () => {
     expect(standIn.tokenRequests).toBe(3);
   });
 
+  it("deduplicates concurrent client-credential token requests", async () => {
+    standIn.setStock(A, 5); standIn.setStock(B, 5);
+    const inventory = gateway();
+    await Promise.all([inventory.availability([A]), inventory.availability([B])]);
+    expect(standIn.tokenRequests).toBe(1);
+  });
+
   it("degrades availability to UNKNOWN instead of breaking browsing", async () => {
     standIn.setStock(A, 5);
     standIn.failures.push({ match: () => true, status: 503 }, { match: () => true, status: 503 });
@@ -87,6 +104,13 @@ describe("StartEntreprise adapter (contract v1, over HTTP)", () => {
     standIn.failures.push({ match: (method) => method === "POST", status: 429, retryAfter: 7 });
     await expect(inventory.reserve({ catalogueItemId: A, quantity: 1, externalReference: "BB-CHK-3", expiresInSeconds: 900 }))
       .rejects.toMatchObject({ code: "RATE_LIMITED", httpStatus: 429, retryAfterSeconds: 7 });
+
+    standIn.failures.push(
+      { match: (method) => method === "POST", status: 503, code: "INVENTORY_UNAVAILABLE", retryAfter: 3 },
+      { match: (method) => method === "POST", status: 503, code: "INVENTORY_UNAVAILABLE", retryAfter: 3 },
+    );
+    await expect(inventory.reserve({ catalogueItemId: A, quantity: 1, externalReference: "BB-CHK-503", expiresInSeconds: 900 }))
+      .rejects.toMatchObject({ code: "INVENTORY_UNAVAILABLE", httpStatus: 503, retryable: true, retryAfterSeconds: 3 });
   });
 
   it("maps business rejections and refuses a replayed reference that is no longer active", async () => {
@@ -95,11 +119,35 @@ describe("StartEntreprise adapter (contract v1, over HTTP)", () => {
     await expect(inventory.reserve({ catalogueItemId: A, quantity: 2, externalReference: "BB-CHK-4", expiresInSeconds: 900 }))
       .rejects.toMatchObject({ code: "INVENTORY_INSUFFICIENT_STOCK", retryable: false, isInsufficientStock: true });
     const reservation = await inventory.reserve({ catalogueItemId: A, quantity: 1, externalReference: "BB-CHK-5", expiresInSeconds: 900 });
+    const replay = await inventory.reserve({ catalogueItemId: A, quantity: 1, externalReference: "BB-CHK-5", expiresInSeconds: 900 });
+    expect(replay.id).toBe(reservation.id);
+    expect(standIn.calls.find((call) => call.path === "/api/public/v1/inventory/reservations")?.idempotencyKey)
+      .toBe(`bb-reserve:BB-CHK-4:${A}`);
+    await expect(inventory.reserve({ catalogueItemId: A, quantity: 2, externalReference: "BB-CHK-5", expiresInSeconds: 900 }))
+      .rejects.toMatchObject({ code: "INVENTORY_IDEMPOTENCY_CONFLICT", httpStatus: 409 });
     expect((await inventory.release(reservation.id)).status).toBe("RELEASED");
     expect((await inventory.release(reservation.id)).status).toBe("RELEASED");
     await expect(inventory.reserve({ catalogueItemId: A, quantity: 1, externalReference: "BB-CHK-5", expiresInSeconds: 900 }))
       .rejects.toMatchObject({ code: "RESERVATION_NOT_ACTIVE" });
     expect(standIn.available(A)).toBe(1);
+  });
+
+  it("validates the consume contract without using it in checkout", async () => {
+    standIn.setStock(A, 3);
+    const inventory = gateway();
+    const reservation = await inventory.reserve({ catalogueItemId: A, quantity: 2, externalReference: "BB-CHK-CONSUME", expiresInSeconds: 900 });
+    expect((await inventory.consume(reservation.id, "consume-123")).status).toBe("CONSUMED");
+    expect((await inventory.consume(reservation.id, "consume-123")).status).toBe("CONSUMED");
+    expect(standIn.available(A)).toBe(1);
+
+    const released = await inventory.reserve({ catalogueItemId: A, quantity: 1, externalReference: "BB-CHK-RELEASED", expiresInSeconds: 900 });
+    await inventory.release(released.id);
+    await expect(inventory.consume(released.id)).rejects.toMatchObject({ code: "INVENTORY_RESERVATION_ALREADY_RELEASED", httpStatus: 409 });
+    standIn.setStock(B, 1);
+    const expired = await inventory.reserve({ catalogueItemId: B, quantity: 1, externalReference: "BB-CHK-EXPIRED", expiresInSeconds: 900 });
+    standIn.reservations.get(expired.id)!.status = "EXPIRED";
+    await expect(inventory.consume(expired.id)).rejects.toMatchObject({ code: "INVENTORY_RESERVATION_EXPIRED", httpStatus: 409 });
+    expect(standIn.calls.some((call) => call.path.endsWith(`/reservations/${reservation.id}/consume`) && call.requestId === "consume-123")).toBe(true);
   });
 
   it("reports unreachable services as retryable transport failures", async () => {
@@ -114,5 +162,6 @@ describe("StartEntreprise adapter (contract v1, over HTTP)", () => {
     expect(disabled.enabled).toBe(false);
     expect((await disabled.availability([A])).get(A)?.status).toBe("UNKNOWN");
     await expect(disabled.reserve()).rejects.toMatchObject({ code: "INTEGRATION_DISABLED" });
+    await expect(disabled.consume()).rejects.toMatchObject({ code: "INTEGRATION_DISABLED" });
   });
 });

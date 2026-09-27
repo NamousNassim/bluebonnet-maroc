@@ -42,6 +42,7 @@ export class HttpInventoryGateway implements InventoryGateway {
   async reserve(request: ReservationRequest, requestId?: string): Promise<Reservation> {
     const reservation = await this.client.request<Reservation>({
       method: "POST", path: "/api/public/v1/inventory/reservations", requestId, retryable: true,
+      idempotencyKey: reservationIdempotencyKey(request),
       body: { ...request, source: "ECOMMERCE" },
     });
     // A replayed reference returns the existing reservation, whatever its state.
@@ -57,6 +58,17 @@ export class HttpInventoryGateway implements InventoryGateway {
       method: "POST", path: `/api/public/v1/inventory/reservations/${encodeURIComponent(reservationId)}/release`, requestId, retryable: true,
     });
   }
+
+  async consume(reservationId: string, requestId?: string): Promise<Reservation> {
+    return this.client.request<Reservation>({
+      method: "POST", path: `/api/public/v1/inventory/reservations/${encodeURIComponent(reservationId)}/consume`, requestId, retryable: true,
+    });
+  }
+}
+
+/** Stable per checkout line and safely below StartEntreprise's 200-character header limit. */
+export function reservationIdempotencyKey(request: ReservationRequest): string {
+  return `bb-reserve:${request.externalReference}:${request.catalogueItemId}`;
 }
 
 /** Used until StartEntreprise ships its public API: availability is unknown and nothing can be reserved. */
@@ -69,6 +81,9 @@ export class DisabledInventoryGateway implements InventoryGateway {
     throw new StartEntrepriseError("INTEGRATION_DISABLED", undefined, false, "StartEntreprise integration is disabled");
   }
   async release(): Promise<Reservation> {
+    throw new StartEntrepriseError("INTEGRATION_DISABLED", undefined, false, "StartEntreprise integration is disabled");
+  }
+  async consume(): Promise<Reservation> {
     throw new StartEntrepriseError("INTEGRATION_DISABLED", undefined, false, "StartEntreprise integration is disabled");
   }
 }

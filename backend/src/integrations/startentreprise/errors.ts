@@ -9,6 +9,7 @@ export class StartEntrepriseError extends Error {
     readonly retryable: boolean,
     message: string,
     readonly retryAfterSeconds?: number,
+    readonly upstreamRequestId?: string,
   ) {
     super(message);
     this.name = "StartEntrepriseError";

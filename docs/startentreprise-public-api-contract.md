@@ -1,9 +1,8 @@
-# StartEntreprise public integration API — contract v1 (proposed)
+# StartEntreprise public integration API — contract v1
 
-Status: **proposed, not yet implemented by StartEntreprise.** Bluebonnet's adapter is written and
-tested against this contract with a stand-in. In production the adapter stays disabled
-(`STARTENTREPRISE_INTEGRATION_ENABLED=false`) until StartEntreprise ships these endpoints. This
-document is the input specification for that StartEntreprise sprint.
+Status: **implemented by StartEntreprise Sprint 4.** Bluebonnet's adapter and local stand-in consume
+this contract. Production remains feature-gated until credentials, mappings, preflight, backup, and
+the one-product smoke test are complete.
 
 ## Principles
 - Consumers never reach StartEntreprise databases or internal routes.
@@ -37,10 +36,13 @@ GET {baseUrl}/api/public/v1/inventory/availability?catalogueItemIds=<uuid>,<uuid
 Availability is computed on the organization's default warehouse (`available = onHand − reserved`).
 
 ## Reservations
-Idempotent on (organization, `source`, `externalReference`, `catalogueItemId`) — the Sprint 3B natural key.
+`Idempotency-Key` is mandatory on create (maximum 200 characters) and is namespaced by the authenticated
+integration application. Bluebonnet derives a stable distinct key per checkout line. StartEntreprise's
+reservation identity is `(organization, integration application, externalReference, catalogueItemId)`.
 
 ```
 POST {baseUrl}/api/public/v1/inventory/reservations
+Idempotency-Key: bb-reserve:BB-CHK-…:<catalogue UUID>
 { "catalogueItemId": "…", "quantity": 2, "externalReference": "BB-CHK-…", "source": "ECOMMERCE", "expiresInSeconds": 900 }
 → 201 created | 200 replayed
 { "id": "…", "status": "ACTIVE", "quantity": 2, "expiresAt": "2026-…Z", "externalReference": "…" }

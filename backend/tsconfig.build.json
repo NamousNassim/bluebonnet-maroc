@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["src", "prisma/seed.ts"],
+  "include": ["src", "prisma/seed.ts", "scripts"],
   "exclude": ["test", "**/*.spec.ts"]
 }

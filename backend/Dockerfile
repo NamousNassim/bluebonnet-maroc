@@ -5,6 +5,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY prisma.config.ts tsconfig.json tsconfig.build.json ./
 COPY prisma ./prisma
+COPY scripts ./scripts
 COPY src ./src
 RUN npm run build && npm prune --omit=dev
 

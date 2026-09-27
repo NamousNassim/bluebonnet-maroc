@@ -207,7 +207,11 @@ describe("Bluebonnet storefront API (PostgreSQL + StartEntreprise stand-in)", ()
       expect(standIn.available(catalogue.plate)).toBe(8);
       expect(standIn.available(catalogue.glass)).toBe(4);
       expect([...standIn.reservations.values()].every((value) => value.externalReference === started.reference)).toBe(true);
-      expect(standIn.calls.filter((call) => call.method === "POST").every((call) => call.requestId === "checkout-req-0001")).toBe(true);
+      const reservationCalls = standIn.calls.filter((call) => call.method === "POST" && call.path === "/api/public/v1/inventory/reservations");
+      expect(reservationCalls.every((call) => call.requestId === "checkout-req-0001")).toBe(true);
+      expect(new Set(reservationCalls.map((call) => call.idempotencyKey))).toEqual(new Set([
+        `bb-reserve:${started.reference}:${catalogue.plate}`, `bb-reserve:${started.reference}:${catalogue.glass}`,
+      ]));
 
       const order = await prisma.order.findFirstOrThrow({ where: { checkoutSessionId: started.id } });
       expect(order).toMatchObject({ email: "salma@example.ma", phone: "+212612345678", city: "Rabat", customerId: null });

@@ -25,8 +25,9 @@ export class ReservationFailure extends Error {
  * durable: a release that fails is kept as RELEASE_FAILED for a later retry, and anything left behind
  * by a crash still expires on its own at StartEntreprise (TTL).
  *
- * The checkout reference is the reservation externalReference, which StartEntreprise uses as its
- * idempotency key: retrying the same attempt can never reserve twice.
+ * The checkout reference is the reservation externalReference. The HTTP adapter derives a distinct,
+ * stable Idempotency-Key from that reference plus the catalogue item, so retries cannot reserve twice
+ * and separate lines cannot conflict with each other.
  */
 @Injectable()
 export class ReservationOrchestrator {
@@ -55,7 +56,9 @@ export class ReservationOrchestrator {
         if (error instanceof StartEntrepriseError && error.isNotStockManaged) continue;
         const released = await this.compensate(checkout.id, requestId);
         this.logger.warn(`checkout ${checkout.reference} reservation failed code=${error instanceof StartEntrepriseError ? error.code : "UNEXPECTED"} `
-            + `line=${line.catalogueItemId} requestId=${requestId ?? "-"} released=${released.released} releaseFailed=${released.failed}`);
+            + `line=${line.catalogueItemId} requestId=${requestId ?? "-"} `
+            + `startEntrepriseRequestId=${error instanceof StartEntrepriseError ? error.upstreamRequestId ?? "-" : "-"} `
+            + `released=${released.released} releaseFailed=${released.failed}`);
         throw toFailure(error, line);
       }
     }
@@ -75,7 +78,9 @@ export class ReservationOrchestrator {
       } catch (error) {
         failed++;
         await this.prisma.checkoutReservation.update({ where: { id: reservation.id }, data: { status: "RELEASE_FAILED" } });
-        this.logger.error(`release failed reservation=${reservation.startEntrepriseReservationId} code=${error instanceof StartEntrepriseError ? error.code : "UNEXPECTED"}`);
+        this.logger.error(`release failed checkoutSessionId=${checkoutId} reservation=${reservation.startEntrepriseReservationId} `
+          + `requestId=${requestId ?? "-"} startEntrepriseRequestId=${error instanceof StartEntrepriseError ? error.upstreamRequestId ?? "-" : "-"} `
+          + `code=${error instanceof StartEntrepriseError ? error.code : "UNEXPECTED"}`);
       }
     }
     return { released, failed };

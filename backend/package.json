@@ -10,7 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest --runInBand",
     "prisma:generate": "prisma generate",
-    "db:seed": "node dist/prisma/seed.js"
+    "db:seed": "node dist/prisma/seed.js",
+    "products:mappings": "node dist/scripts/product-mappings.js",
+    "integration:smoke": "node dist/scripts/integration-smoke.js"
   },
   "engines": {
     "node": ">=24"

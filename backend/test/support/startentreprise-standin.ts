@@ -4,13 +4,14 @@ import { randomUUID } from "node:crypto";
 
 /**
  * In-process stand-in for the StartEntreprise public API contract v1. It reproduces what Bluebonnet
- * relies on — client-credentials tokens, batch availability, natural-key idempotent reservations,
- * release — plus switches to inject 401/403/429/503 answers.
+ * relies on — client-credentials tokens, batch availability, integration-scoped Idempotency-Key
+ * reservations, release and consume — plus switches to inject 401/403/429/503 answers.
  */
 export class StartEntrepriseStandIn {
   readonly stock = new Map<string, { onHand: number; reserved: number; tracked: boolean }>();
   readonly reservations = new Map<string, { id: string; catalogueItemId: string; quantity: number; status: string; expiresAt: string; externalReference: string }>();
-  readonly calls: { method: string; path: string; requestId?: string; authorization?: string }[] = [];
+  readonly calls: { method: string; path: string; requestId?: string; idempotencyKey?: string; authorization?: string }[] = [];
+  readonly idempotency = new Map<string, { fingerprint: string; reservationId: string }>();
   tokenRequests = 0;
   validTokens = new Set<string>();
   secret = "standin-secret";
@@ -38,7 +39,7 @@ export class StartEntrepriseStandIn {
   }
 
   reset(): void {
-    this.stock.clear(); this.reservations.clear(); this.calls.length = 0; this.failures = [];
+    this.stock.clear(); this.reservations.clear(); this.idempotency.clear(); this.calls.length = 0; this.failures = [];
     this.rejectReservation.clear(); this.failRelease.clear(); this.tokenRequests = 0; this.validTokens.clear();
   }
 
@@ -50,8 +51,10 @@ export class StartEntrepriseStandIn {
   private async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     const url = new URL(request.url ?? "/", "http://standin");
     const body = await readBody(request);
+    const requestId = request.headers["x-request-id"] as string | undefined;
     const send = (status: number, json?: unknown, headers: Record<string, string> = {}) => {
-      response.writeHead(status, { "Content-Type": status >= 400 ? "application/problem+json" : "application/json", ...headers });
+      response.writeHead(status, { "Content-Type": status >= 400 ? "application/problem+json" : "application/json",
+        ...(requestId ? { "X-Request-Id": requestId } : {}), ...headers });
       response.end(json === undefined ? undefined : JSON.stringify(json));
     };
     if (url.pathname === "/token") {
@@ -63,7 +66,8 @@ export class StartEntrepriseStandIn {
       return send(200, { access_token: token, expires_in: 300, token_type: "Bearer" });
     }
     const authorization = request.headers.authorization;
-    this.calls.push({ method: request.method!, path: url.pathname + url.search, requestId: request.headers["x-request-id"] as string, authorization });
+    this.calls.push({ method: request.method!, path: url.pathname + url.search, requestId,
+      idempotencyKey: request.headers["idempotency-key"] as string | undefined, authorization });
     const failure = this.failures.findIndex((candidate) => candidate.match(request.method!, url.pathname));
     if (failure >= 0) {
       const [injected] = this.failures.splice(failure, 1);
@@ -84,6 +88,14 @@ export class StartEntrepriseStandIn {
     }
     if (request.method === "POST" && url.pathname === "/api/public/v1/inventory/reservations") {
       const input = JSON.parse(body) as { catalogueItemId: string; quantity: number; externalReference: string; expiresInSeconds: number };
+      const idempotencyKey = request.headers["idempotency-key"] as string | undefined;
+      if (!idempotencyKey) return send(400, { code: "INVENTORY_IDEMPOTENCY_KEY_REQUIRED" });
+      const fingerprint = JSON.stringify(input);
+      const previous = this.idempotency.get(idempotencyKey);
+      if (previous) {
+        if (previous.fingerprint !== fingerprint) return send(409, { code: "INVENTORY_IDEMPOTENCY_CONFLICT" });
+        return send(200, this.reservations.get(previous.reservationId));
+      }
       const rejection = this.rejectReservation.get(input.catalogueItemId);
       if (rejection) return send(rejection.status, { code: rejection.code, detail: "rejected" });
       const replay = [...this.reservations.values()].find((value) => value.externalReference === input.externalReference && value.catalogueItemId === input.catalogueItemId);
@@ -96,6 +108,7 @@ export class StartEntrepriseStandIn {
       const reservation = { id: randomUUID(), catalogueItemId: input.catalogueItemId, quantity: input.quantity, status: "ACTIVE",
         expiresAt: new Date(Date.now() + input.expiresInSeconds * 1000).toISOString(), externalReference: input.externalReference };
       this.reservations.set(reservation.id, reservation);
+      this.idempotency.set(idempotencyKey, { fingerprint, reservationId: reservation.id });
       return send(201, reservation);
     }
     const release = /^\/api\/public\/v1\/inventory\/reservations\/([^/]+)\/release$/.exec(url.pathname);
@@ -106,6 +119,20 @@ export class StartEntrepriseStandIn {
       if (reservation.status === "ACTIVE") {
         reservation.status = "RELEASED";
         this.stock.get(reservation.catalogueItemId)!.reserved -= reservation.quantity;
+      }
+      return send(200, reservation);
+    }
+    const consume = /^\/api\/public\/v1\/inventory\/reservations\/([^/]+)\/consume$/.exec(url.pathname);
+    if (request.method === "POST" && consume) {
+      const reservation = this.reservations.get(consume[1]);
+      if (!reservation) return send(404, { code: "INVENTORY_RESERVATION_NOT_FOUND" });
+      if (reservation.status === "RELEASED") return send(409, { code: "INVENTORY_RESERVATION_ALREADY_RELEASED" });
+      if (reservation.status === "EXPIRED") return send(409, { code: "INVENTORY_RESERVATION_EXPIRED" });
+      if (reservation.status === "ACTIVE") {
+        reservation.status = "CONSUMED";
+        const stock = this.stock.get(reservation.catalogueItemId)!;
+        stock.reserved -= reservation.quantity;
+        stock.onHand -= reservation.quantity;
       }
       return send(200, reservation);
     }

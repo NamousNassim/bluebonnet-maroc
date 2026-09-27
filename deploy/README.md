@@ -8,7 +8,8 @@ Bluebonnet runs on the same VPS as StartEntreprise but as a separate project:
 /opt/startentreprise     ← untouched, except that its Caddy imports Bluebonnet's site file
 ```
 
-Containers: `bluebonnet-frontend`, `bluebonnet-api`, `bluebonnet-postgres`. None publishes a host port.
+Containers: `bluebonnet-frontend`, `bluebonnet-api`, `bluebonnet-postgres`, and `bluebonnet-backup`.
+None publishes a host port.
 The existing StartEntreprise Caddy (the only thing on 80/443) reaches the frontend and API over the
 external Docker network `shared-edge`. PostgreSQL is only on Bluebonnet's `internal` network.
 
@@ -34,6 +35,7 @@ sudo mkdir -p /opt/bluebonnet && sudo chown "$USER" /opt/bluebonnet
 git clone <bluebonnet repository> /opt/bluebonnet
 cd /opt/bluebonnet
 mkdir -p secrets && cp .env.prod.example secrets/bluebonnet.env && chmod 600 secrets/bluebonnet.env
+sudo install -d -m 700 /opt/bluebonnet/backups
 sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 32)/" secrets/bluebonnet.env
 # leave CHECKOUT_ENABLED=false and STARTENTREPRISE_INTEGRATION_ENABLED=false for now
 
@@ -63,22 +65,105 @@ cd /opt/startentreprise/docker && docker compose -f compose.prod.yml --env-file 
 ## Checks
 
 ```bash
-docker ps --filter name=bluebonnet                    # three containers, all healthy, no published ports
+docker ps --filter name=bluebonnet                    # application + backup containers, no published ports
 curl -sI https://bluebonnetmaroc.com | head -1         # 200
 curl -sI https://www.bluebonnetmaroc.com | grep -i location
 curl -s https://api.bluebonnetmaroc.com/health         # {"status":"UP","startEntreprise":"DISABLED"}
 ```
 
-## Opening online ordering (later)
+## Real StartEntreprise mapping and rollout
 
-Once StartEntreprise exposes contract v1 and issues a `bluebonnet-storefront` client with scopes
-`inventory:availability:read` and `inventory:reservations:write`: set the `STARTENTREPRISE_*` values in
-`secrets/bluebonnet.env`, then `STARTENTREPRISE_INTEGRATION_ENABLED=true` and `CHECKOUT_ENABLED=true`, and
-recreate `bluebonnet-api`. Map each product's `startEntrepriseCatalogueId` to the real ERP catalogue item first.
+Create `bluebonnet-storefront` in StartEntreprise under **Paramètres → Intégrations API** with only
+`inventory:availability:read` and `inventory:reservations:write`. Put the one-time client id and secret
+in `secrets/bluebonnet.env`; never use `NEXT_PUBLIC_*`. Keep both feature flags false initially.
 
-## Backups
+The mapping importer accepts JSON and defaults to dry-run:
+
+```json
+[
+  { "slug": "assiette-gres-artisanal", "startEntrepriseCatalogueId": "REAL-ERP-UUID" }
+]
+```
+
+Before applying mappings, take and verify a named backup:
 
 ```bash
-mkdir -p /opt/bluebonnet/backups
-docker exec bluebonnet-postgres pg_dump -U bluebonnet -Fc bluebonnet > /opt/bluebonnet/backups/bluebonnet-$(date +%F).dump
+docker exec bluebonnet-backup sh -ec \
+  'target=/backups/pre-mapping-$(date -u +%Y%m%dT%H%M%SZ).dump; pg_dump -Fc --file="$target"; test -s "$target"; ls -lh "$target"'
+docker cp product-mappings.json bluebonnet-api:/tmp/product-mappings.json
+docker exec bluebonnet-api npm run products:mappings -- --file /tmp/product-mappings.json
+# Inspect every from/to value. Applying an existing mapping requires both explicit switches:
+docker exec bluebonnet-api npm run products:mappings -- \
+  --file /tmp/product-mappings.json --apply --allow-remap
 ```
+
+Never map the Sprint 1 demo UUID range. Find and unpublish any remaining placeholder products before
+rollout:
+
+```bash
+docker exec bluebonnet-postgres psql -U bluebonnet -d bluebonnet -c \
+  "select slug,startentreprise_catalogue_id,published from products where startentreprise_catalogue_id::text like '8b2f3d7e-0a1c-4c55-9a51-00000000000%';"
+# If a demo product is not being remapped, unpublish it explicitly after the verified backup:
+docker exec bluebonnet-postgres psql -U bluebonnet -d bluebonnet -c \
+  "update products set published=false, active=false where startentreprise_catalogue_id::text like '8b2f3d7e-0a1c-4c55-9a51-00000000000%';"
+```
+
+Run preflight without changing the service's persisted feature flag:
+
+```bash
+docker exec -e STARTENTREPRISE_INTEGRATION_ENABLED=true bluebonnet-api \
+  npm run products:mappings -- --preflight
+```
+
+Then run the controlled one-product token → availability → reserve/replay → release smoke test. Use
+one real catalogue UUID with a known small quantity:
+
+```bash
+docker exec -e STARTENTREPRISE_INTEGRATION_ENABLED=true bluebonnet-api \
+  npm run integration:smoke -- REAL-ERP-UUID 1
+```
+
+Confirm Inventory availability decreases during reservation and returns after release, and inspect
+Bluebonnet/StartEntreprise logs for matching request ids without tokens or secrets. Also verify an
+invalid secret is rejected, missing scope returns 403, unknown item/insufficient stock/idempotency
+conflict return their documented codes, and 429 supplies `Retry-After` where practical.
+
+Only after preflight and smoke succeed:
+
+1. Set `STARTENTREPRISE_INTEGRATION_ENABLED=true`, keeping `CHECKOUT_ENABLED=false`.
+2. Recreate `bluebonnet-api` and validate FR/AR storefront availability and cart behavior.
+3. Validate checkout reservation, compensation, and expiry in a controlled environment.
+4. Keep `CHECKOUT_ENABLED=false` if paid ordering must wait for NAPS; enabling stock integration does
+   not authorize enabling checkout.
+
+## Backups and restore
+
+`bluebonnet-backup` creates a compressed backup immediately and then daily by default. Backups are
+mounted at `/opt/bluebonnet/backups`, outside the Git working tree, and retained for 14 days. Verify it:
+
+```bash
+docker logs --tail 20 bluebonnet-backup
+find /opt/bluebonnet/backups -maxdepth 1 -type f -name 'bluebonnet-*.dump' -size +0 -ls
+```
+
+Restore requires a maintenance window and stops the API first:
+
+```bash
+docker compose -f deploy/compose.prod.yml --env-file secrets/bluebonnet.env stop bluebonnet-api
+docker exec -i bluebonnet-postgres pg_restore -U bluebonnet -d bluebonnet --clean --if-exists < /opt/bluebonnet/backups/FILE.dump
+docker compose -f deploy/compose.prod.yml --env-file secrets/bluebonnet.env start bluebonnet-api
+```
+
+Test restore procedure on a non-production database before relying on it. Database credential rotation
+requires changing `POSTGRES_PASSWORD`, rotating the PostgreSQL role password, and recreating dependent
+containers in one maintenance window; do not merely edit the env file against an existing data volume.
+
+## Host housekeeping
+
+```bash
+docker network inspect shared-edge >/dev/null || docker network create shared-edge
+find /opt/startentreprise /opt/bluebonnet -path '*/.git' -prune -o -type f -name '*.dump' -print
+```
+
+Move any reported dump into its project's protected backup directory before deployment. Do not keep
+database dumps in either Git working tree.

@@ -29,6 +29,8 @@ export interface InventoryGateway {
   availability(catalogueItemIds: string[], requestId?: string): Promise<Map<string, Availability>>;
   reserve(request: ReservationRequest, requestId?: string): Promise<Reservation>;
   release(reservationId: string, requestId?: string): Promise<Reservation>;
+  /** Payment integration will call this later; checkout must not consume before payment exists. */
+  consume(reservationId: string, requestId?: string): Promise<Reservation>;
 }
 
 export const INVENTORY_GATEWAY = Symbol("INVENTORY_GATEWAY");

@@ -20,7 +20,7 @@ touches StartEntreprise databases or code.
 - Stock is reserved only when a checkout is **confirmed**, never at cart stage; failed lines release what was already reserved.
 - Shoppers see coarse availability (in stock / few left / unavailable / confirmed at order), never raw stock.
 - Secrets live server-side only (no `NEXT_PUBLIC_*`). The browser talks to `/api/*` on the storefront origin.
-- Online ordering stays closed (`CHECKOUT_ENABLED=false`, `STARTENTREPRISE_INTEGRATION_ENABLED=false`) until StartEntreprise ships the public inventory API. Browsing and carts work meanwhile.
+- Online ordering stays closed (`CHECKOUT_ENABLED=false`) until real mappings and the production reservation smoke test pass. The integration has its own separately controlled flag.
 - No payment yet: confirmed checkouts become `PENDING` orders; unpaid reservations expire and cancel the order.
 
 ## Local development

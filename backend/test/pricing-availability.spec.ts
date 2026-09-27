@@ -28,6 +28,7 @@ describe("displayed availability", () => {
     availability: async (ids: string[]) => { calls.push(ids); return new Map<string, Availability>(ids.map((id) => [id, { catalogueItemId: id, status: "IN_STOCK", quantityAvailable: 40 }])); },
     reserve: async () => { throw new Error("unused"); },
     release: async () => { throw new Error("unused"); },
+    consume: async () => { throw new Error("unused"); },
   } as unknown as InventoryGateway;
   const service = new AvailabilityService(gateway, { LOW_STOCK_DISPLAY_THRESHOLD: 5 } as AppConfig);
   const of = (status: Availability["status"], quantityAvailable?: number) => service.display({ catalogueItemId: "x", status, quantityAvailable } as Availability);
