@@ -1,37 +1,49 @@
-.header { position: sticky; top: 0; z-index: 40; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
-.bar { display: flex; align-items: center; gap: 24px; min-height: 76px; }
-.brand { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.brand img { display: block; height: 64px; width: auto; }
-.brandText { display: grid; line-height: 1.1; }
-.brandName { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.32em; color: var(--cobalt); text-transform: uppercase; }
-.brandTag { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
-.nav { display: flex; gap: 28px; margin-inline: auto; }
-.nav a { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--charcoal); padding-block: 6px; border-bottom: 1px solid transparent; }
-.nav a:hover, .nav a[aria-current="page"] { color: var(--cobalt); border-color: var(--cobalt); }
-.actions { display: flex; align-items: center; gap: 6px; }
-.iconButton { position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; border: 0; background: transparent; color: var(--cobalt); cursor: pointer; }
-.iconButton:hover { background: var(--lavender-soft); }
-.count { position: absolute; top: 2px; inset-inline-end: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--cobalt); color: var(--ivory); font-size: 0.68rem; display: grid; place-items: center; }
-.locale { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-pill); overflow: hidden; font-size: 0.72rem; }
-.locale button { border: 0; background: transparent; padding: 5px 9px; cursor: pointer; color: var(--muted); }
-.locale button[aria-pressed="true"] { background: var(--cobalt); color: var(--ivory); }
-.search { border-top: 1px solid var(--line); padding-block: 14px; }
+.header { position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--ivory) 92%, transparent); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(25, 63, 149, .08); }
+.bar { display: flex; align-items: center; gap: clamp(14px, 2vw, 34px); min-height: 82px; }
+.brand { display: inline-flex; align-items: center; gap: 13px; flex-shrink: 0; }
+.brand img { display: block; width: auto; height: 60px; mix-blend-mode: multiply; }
+.brandText { display: grid; line-height: 1.05; }
+.brandName { font-family: var(--font-display); font-size: 1.08rem; letter-spacing: .3em; color: var(--cobalt); text-transform: uppercase; }
+.brandTag { margin-top: 4px; font-size: .52rem; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+.nav { display: flex; align-items: center; gap: clamp(14px, 1.65vw, 28px); margin-inline: auto; white-space: nowrap; }
+.nav a { position: relative; padding-block: 10px; color: var(--charcoal); font-size: .75rem; }
+.nav a::after { content: ""; position: absolute; inset-inline: 0; bottom: 5px; height: 1px; background: var(--cobalt); transform: scaleX(0); transition: transform 180ms ease; }
+.nav a:hover, .nav a[aria-current="page"] { color: var(--cobalt); }
+.nav a:hover::after, .nav a[aria-current="page"]::after { transform: scaleX(1); }
+.actions { display: flex; align-items: center; gap: 3px; }
+.iconButton { position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; border: 0; background: transparent; color: var(--cobalt); cursor: pointer; transition: background 180ms ease; }
+.iconButton:hover { background: var(--lavender); }
+.count { position: absolute; top: 1px; inset-inline-end: -1px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--cobalt); color: #fff; font-size: .66rem; display: grid; place-items: center; }
+.locale { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-pill); overflow: hidden; font-size: .7rem; }
+.locale button { min-width: 34px; border: 0; background: transparent; padding: 6px 9px; cursor: pointer; color: var(--muted); }
+.locale button[aria-pressed="true"] { background: var(--cobalt); color: #fff; }
+.search { border-top: 1px solid var(--line); padding-block: 14px; background: var(--ivory); }
 .search form { display: flex; gap: 10px; }
-.search input { flex: 1; min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 0 18px; background: #fff; }
+.search input { flex: 1; min-height: 48px; border: 1px solid var(--line); border-radius: var(--radius-pill); padding: 0 20px; background: #fff; outline: 0; }
+.search input:focus { border-color: var(--cobalt); }
 .menuButton { display: none; }
 .drawer { display: none; }
-@media (max-width: 960px) {
+@media (max-width: 1220px) {
+  .brandTag { display: none; }
+  .brandName { font-size: .95rem; }
+  .nav { gap: 14px; }
+}
+@media (max-width: 1020px) {
   .nav { display: none; }
   .menuButton { display: inline-grid; }
-  .bar { gap: 8px; min-height: 64px; }
+  .bar { gap: 8px; min-height: 68px; }
   .brand { margin-inline: auto; }
-  .brand img { height: 52px; }
-  .brandTag { display: none; }
-  .brandName { font-size: 0.95rem; letter-spacing: 0.24em; }
+  .brand img { height: 50px; }
+  .brandName { font-size: .9rem; letter-spacing: .24em; }
   .localeDesktop { display: none; }
-  .drawer { display: block; position: fixed; inset: 64px 0 0; background: var(--ivory); padding: 24px var(--gutter); border-top: 1px solid var(--line); overflow-y: auto; }
-  .drawer nav { display: grid; gap: 4px; }
-  .drawer a { display: block; padding: 14px 0; border-bottom: 1px solid var(--line); font-family: var(--font-display); font-size: 1.3rem; color: var(--cobalt); }
-  .drawer .locale { margin-top: 24px; }
+  .drawer { display: block; position: fixed; inset: 68px 0 0; min-height: calc(100svh - 68px); background: var(--ivory); padding: 24px var(--gutter) 48px; border-top: 1px solid var(--line); overflow-y: auto; animation: drawer-in 180ms ease-out; }
+  .drawer nav { display: grid; }
+  .drawer a { display: block; padding-block: 15px; border-bottom: 1px solid var(--line); font-family: var(--font-display); font-size: 1.45rem; color: var(--cobalt); }
+  .drawer .locale { margin-top: 28px; }
+  @keyframes drawer-in { from { opacity: 0; transform: translateY(-8px); } }
 }
-@media (max-width: 420px) { .brand img { height: 44px; } }
+@media (max-width: 430px) {
+  .brand img { height: 43px; }
+  .brandText { display: none; }
+  .actions { gap: 0; }
+}

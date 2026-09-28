@@ -59,22 +59,21 @@ describe("formatting", () => {
 });
 
 describe("homepage", () => {
-  it("renders the hero, categories, featured products and the brand story anchor", async () => {
+  it("renders the editorial launch experience without invented products", async () => {
     const { container } = render(await HomePage());
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(t.heroTitle);
     expect(screen.getByRole("heading", { name: t.categoriesTitle })).toBeTruthy();
     expect(screen.getByRole("link", { name: /Vaisselle/ }).getAttribute("href")).toBe("/categorie/vaisselle");
-    expect(screen.getByRole("link", { name: "Assiette en grès artisanal" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: t.collectionTitle })).toBeTruthy();
+    expect(screen.queryByText("Assiette en grès artisanal")).toBeNull();
     expect(container.querySelector("#inspirations")).not.toBeNull();
-    expect(api.getProducts).toHaveBeenCalledWith(expect.objectContaining({ featured: true }));
+    expect(api.getProducts).not.toHaveBeenCalled();
   });
 
-  it("still renders when the catalogue API is down", async () => {
-    api.getCategories.mockRejectedValue(new Error("down"));
-    api.getProducts.mockRejectedValue(new Error("down"));
+  it("does not depend on catalogue inventory to tell the brand story", async () => {
     render(await HomePage());
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: t.featuredTitle })).toBeNull();
+    expect(screen.getByText(t.comingSoon)).toBeTruthy();
   });
 });
 
@@ -269,8 +268,8 @@ describe("navigation", () => {
   it("links to the storefront sections, shows the cart count and hides unbuilt features", async () => {
     handler = () => ({ status: 200, json: cart(2) });
     render(<Header locale="fr" />);
-    const nav = screen.getByRole("navigation", { name: "Navigation principale" });
-    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/produits?sort=new", "/categorie/vaisselle", "/categorie/decoration", "/#inspirations"]);
+    const nav = screen.getByRole("navigation", { name: t.menu });
+    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/produits?sort=new", "/produits", "/categorie/vaisselle", "/categorie/verrerie", "/categorie/linge-de-table", "/#inspirations"]);
     expect(await screen.findByRole("link", { name: `${t.cart} (2)` })).toBeTruthy();
     expect(screen.queryByRole("link", { name: /compte|account|favoris|wishlist/i })).toBeNull();
   });

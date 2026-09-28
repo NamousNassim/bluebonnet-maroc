@@ -13,13 +13,13 @@ const naskh = Noto_Naskh_Arabic({ subsets: ["arabic"], variable: "--font-naskh",
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: "Bluebonnet — Arts de la table & maison au Maroc", template: "%s | Bluebonnet" },
-  description: "Vaisselle, verrerie, linge de table et décoration inspirés par la nature. La beauté au quotidien.",
+  title: { default: "Bluebonnet — Arts de la table au Maroc", template: "%s | Bluebonnet" },
+  description: "Vaisselle, verrerie, linge et accessoires de table inspirés par la nature. L’art de recevoir au quotidien.",
   openGraph: { siteName: "Bluebonnet", locale: "fr_MA", type: "website" },
   icons: { icon: "/favicon.svg" },
 };
 
-export const viewport: Viewport = { themeColor: "#1c1cff" };
+export const viewport: Viewport = { themeColor: "#193f95" };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { locale, t } = await getDictionary();

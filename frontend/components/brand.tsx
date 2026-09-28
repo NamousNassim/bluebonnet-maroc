@@ -1,6 +1,8 @@
-/** Official mark, served unchanged from /BlueBonnet.jpeg. */
+import Image from "next/image";
+
+/** Official Bluebonnet monogram, sourced from the supplied brand asset. */
 export function Monogram({ size = 64 }: { size?: number }) {
-  return <img src="/BlueBonnet.jpeg" alt="" height={size} />;
+  return <Image src="/images/brand/bluebonnet.jpeg" alt="" width={Math.round(size * 0.973)} height={size} sizes={`${size}px`} />;
 }
 
 /** A bluebonnet sprig: stem, leaves and stacked blooms. */

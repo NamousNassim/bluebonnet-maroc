@@ -32,8 +32,10 @@ export function Header({ locale }: { locale: Locale }) {
 
   const links = [
     { href: "/produits?sort=new", match: "/produits", label: t.navNew },
-    { href: "/categorie/vaisselle", match: "/categorie/vaisselle", label: t.navTableware },
-    { href: "/categorie/decoration", match: "/categorie/decoration", label: t.navDecor },
+    { href: "/produits", match: "/produits", label: t.navTableware },
+    { href: "/categorie/vaisselle", match: "/categorie/vaisselle", label: t.navDishware },
+    { href: "/categorie/verrerie", match: "/categorie/verrerie", label: t.navGlassware },
+    { href: "/categorie/linge-de-table", match: "/categorie/linge-de-table", label: t.navLinens },
     { href: "/#inspirations", match: "/#inspirations", label: t.navInspiration },
   ];
   const setLocale = (next: Locale) => {
@@ -63,7 +65,7 @@ export function Header({ locale }: { locale: Locale }) {
             <span className={styles.brandTag}>{t.brandTagline}</span>
           </span>
         </Link>
-        <nav className={styles.nav} aria-label="Navigation principale">
+        <nav className={styles.nav} aria-label={t.menu}>
           {links.map((link) => (
             <Link key={link.href} href={link.href} aria-current={pathname === link.match ? "page" : undefined}>{link.label}</Link>
           ))}
@@ -90,7 +92,7 @@ export function Header({ locale }: { locale: Locale }) {
       )}
       {open && (
         <div id="mobile-menu" className={styles.drawer}>
-          <nav aria-label="Navigation mobile">
+          <nav aria-label={t.menu}>
             {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
             <Link href="/panier">{t.cart}</Link>
           </nav>
