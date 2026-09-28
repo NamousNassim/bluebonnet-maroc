@@ -32,6 +32,11 @@ model Category {
 
 model Product {
   id                         String         @id @default(uuid()) @db.Uuid
+  /// StartEntreprise publication relationship. Nullable only for pre-Sprint-5 legacy rows.
+  salesChannelListingId      String?        @unique @map("sales_channel_listing_id") @db.Uuid
+  sourceOrganizationId       String?        @map("source_organization_id") @db.Uuid
+  listingVersion             Int            @default(0) @map("listing_version")
+  projectionHash             String?        @map("projection_hash") @db.Char(64)
   /// Stable StartEntreprise ERP catalogue item id — the only link to StartEntreprise.
   startEntrepriseCatalogueId String         @unique @map("startentreprise_catalogue_id") @db.Uuid
   slug                       String         @unique @db.VarChar(160)
@@ -50,8 +55,10 @@ model Product {
   published                  Boolean        @default(false)
   featured                   Boolean        @default(false)
   sortOrder                  Int            @default(0) @map("sort_order")
-  seoTitle                   String?        @map("seo_title") @db.VarChar(200)
-  seoDescription             String?        @map("seo_description") @db.VarChar(320)
+  seoTitleFr                 String?        @map("seo_title") @db.VarChar(200)
+  seoTitleAr                 String?        @map("seo_title_ar") @db.VarChar(200)
+  seoDescriptionFr           String?        @map("seo_description") @db.VarChar(320)
+  seoDescriptionAr           String?        @map("seo_description_ar") @db.VarChar(320)
   publishedAt                DateTime?      @map("published_at") @db.Timestamptz(3)
   createdAt                  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt                  DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -62,6 +69,16 @@ model Product {
   @@index([published, active, featured, sortOrder])
   @@index([published, active, publishedAt])
   @@map("products")
+}
+
+/// Replays of StartEntreprise outbox jobs return the original result and cannot mutate twice.
+model ManagementIdempotencyRecord {
+  key         String   @id @db.VarChar(200)
+  requestHash String   @map("request_hash") @db.Char(64)
+  response    Json
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("management_idempotency_records")
 }
 
 /// Images live in object storage / static hosting; only URLs are stored.

@@ -76,9 +76,15 @@ services:
       STARTENTREPRISE_CLIENT_ID: ${STARTENTREPRISE_CLIENT_ID:-}
       STARTENTREPRISE_CLIENT_SECRET: ${STARTENTREPRISE_CLIENT_SECRET:-}
       STARTENTREPRISE_TIMEOUT_MS: ${STARTENTREPRISE_TIMEOUT_MS:-5000}
+      BLUEBONNET_MANAGEMENT_ENABLED: ${BLUEBONNET_MANAGEMENT_ENABLED:-false}
+      BLUEBONNET_MANAGEMENT_CLIENT_ID: ${BLUEBONNET_MANAGEMENT_CLIENT_ID:-}
+      BLUEBONNET_MANAGEMENT_CLIENT_SECRET: ${BLUEBONNET_MANAGEMENT_CLIENT_SECRET:-}
+      BLUEBONNET_MANAGEMENT_ORGANIZATION_ID: ${BLUEBONNET_MANAGEMENT_ORGANIZATION_ID:-}
+      BLUEBONNET_MANAGEMENT_STORE_ID: ${BLUEBONNET_MANAGEMENT_STORE_ID:-bluebonnet-main}
       SEED_DEMO_PRODUCTS: "false"
     # internal: database. shared-edge: Caddy (api.bluebonnetmaroc.com) and outbound HTTPS to StartEntreprise.
-    networks: [internal, shared-edge]
+    # sales-channels: StartEntreprise's API reaches the private management API here, and nothing else does.
+    networks: [internal, shared-edge, sales-channels]
 
   bluebonnet-frontend:
     build:
@@ -86,7 +92,7 @@ services:
       args:
         INTERNAL_API_URL: http://bluebonnet-api:4000
         PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-https://bluebonnetmaroc.com}
-        IMAGE_HOST: ${IMAGE_HOST:-}
+        IMAGE_HOST: ${IMAGE_HOST:-startentreprise.ma}
     container_name: bluebonnet-frontend
     restart: unless-stopped
     depends_on:
@@ -105,4 +111,8 @@ networks:
   internal:
   shared-edge:
     name: shared-edge
+    external: true
+  # Created once per host: docker network create sales-channels
+  sales-channels:
+    name: sales-channels
     external: true

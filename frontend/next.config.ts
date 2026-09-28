@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
     remotePatterns: process.env.IMAGE_HOST ? [{ protocol: "https", hostname: process.env.IMAGE_HOST }] : [],
   },
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${apiUrl}/:path*` }];
+    // Only the public storefront API is proxied; /api/internal/* (machine management) never is.
+    return [{ source: "/api/v1/:path*", destination: `${apiUrl}/v1/:path*` }];
   },
 };
 

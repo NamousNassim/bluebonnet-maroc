@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
@@ -27,10 +27,12 @@ describe("Bluebonnet storefront API (PostgreSQL + StartEntreprise stand-in)", ()
   beforeAll(async () => {
     await standIn.start();
     database = await new PostgreSqlContainer("postgres:17-alpine").start();
-    const migration = readFileSync(join(__dirname, "../prisma/migrations/20260927000000_init/migration.sql"), "utf8");
     const client = new Client({ connectionString: database.getConnectionUri() });
     await client.connect();
-    await client.query(migration);
+    const migrations = join(__dirname, "../prisma/migrations");
+    for (const name of readdirSync(migrations).filter((entry) => /^\d/.test(entry)).sort()) {
+      await client.query(readFileSync(join(migrations, name, "migration.sql"), "utf8"));
+    }
     await client.end();
     Object.assign(process.env, {
       DATABASE_URL: database.getConnectionUri(), CHECKOUT_ENABLED: "true", STARTENTREPRISE_INTEGRATION_ENABLED: "true",

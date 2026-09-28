@@ -25,10 +25,26 @@ const schema = z.object({
   STARTENTREPRISE_CLIENT_ID: z.string().optional(),
   STARTENTREPRISE_CLIENT_SECRET: z.string().optional(),
   STARTENTREPRISE_TIMEOUT_MS: z.coerce.number().int().min(500).default(5000),
+  BLUEBONNET_MANAGEMENT_ENABLED: flag,
+  /** Dedicated StartEntreprise → Bluebonnet identity; never the storefront's stock client. */
+  BLUEBONNET_MANAGEMENT_CLIENT_ID: z.string().min(1).default("startentreprise-bluebonnet-management"),
+  BLUEBONNET_MANAGEMENT_CLIENT_SECRET: z.string().optional(),
+  BLUEBONNET_MANAGEMENT_ORGANIZATION_ID: z.string().uuid().optional(),
+  BLUEBONNET_MANAGEMENT_STORE_ID: z.string().min(1).max(100).default("bluebonnet-main"),
 }).superRefine((value, context) => {
-  if (!value.STARTENTREPRISE_INTEGRATION_ENABLED) return;
-  for (const key of ["STARTENTREPRISE_API_URL", "STARTENTREPRISE_TOKEN_URL", "STARTENTREPRISE_CLIENT_ID", "STARTENTREPRISE_CLIENT_SECRET"] as const) {
-    if (!value[key]) context.addIssue({ code: "custom", path: [key], message: "required when STARTENTREPRISE_INTEGRATION_ENABLED=true" });
+  // Each direction is validated on its own: management is typically enabled while stock is not yet.
+  if (value.STARTENTREPRISE_INTEGRATION_ENABLED) {
+    for (const key of ["STARTENTREPRISE_API_URL", "STARTENTREPRISE_TOKEN_URL", "STARTENTREPRISE_CLIENT_ID", "STARTENTREPRISE_CLIENT_SECRET"] as const) {
+      if (!value[key]) context.addIssue({ code: "custom", path: [key], message: "required when STARTENTREPRISE_INTEGRATION_ENABLED=true" });
+    }
+  }
+  if (value.BLUEBONNET_MANAGEMENT_ENABLED) {
+    for (const key of ["BLUEBONNET_MANAGEMENT_CLIENT_ID", "BLUEBONNET_MANAGEMENT_CLIENT_SECRET", "BLUEBONNET_MANAGEMENT_ORGANIZATION_ID"] as const) {
+      if (!value[key]) context.addIssue({ code: "custom", path: [key], message: "required when BLUEBONNET_MANAGEMENT_ENABLED=true" });
+    }
+    if ((value.BLUEBONNET_MANAGEMENT_CLIENT_SECRET ?? "").length < 32) {
+      context.addIssue({ code: "custom", path: ["BLUEBONNET_MANAGEMENT_CLIENT_SECRET"], message: "must be at least 32 characters (openssl rand -hex 32)" });
+    }
   }
 });
 

@@ -16,8 +16,16 @@ www.bluebonnetmaroc.com {
 	}
 }
 
+(bluebonnet_private) {
+	# The management API is machine-to-machine over the private "sales-channels" Docker network only.
+	# /api/api/* covers the storefront's /api proxy prefix as well (defense in depth).
+	@bluebonnet_private path /api/internal/* /api/api/*
+	respond @bluebonnet_private "Not found" 404
+}
+
 bluebonnetmaroc.com {
 	import bluebonnet_headers
+	import bluebonnet_private
 	encode zstd gzip
 	reverse_proxy bluebonnet-frontend:3000
 }
@@ -25,5 +33,6 @@ bluebonnetmaroc.com {
 api.bluebonnetmaroc.com {
 	import bluebonnet_headers
 	encode zstd gzip
+	import bluebonnet_private
 	reverse_proxy bluebonnet-api:4000
 }

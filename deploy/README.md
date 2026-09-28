@@ -136,6 +136,67 @@ Only after preflight and smoke succeed:
 4. Keep `CHECKOUT_ENABLED=false` if paid ordering must wait for NAPS; enabling stock integration does
    not authorize enabling checkout.
 
+## Product publishing from StartEntreprise (Canaux de vente)
+
+Products are no longer created in this database by hand. The merchant manages them in StartEntreprise →
+**Canaux de vente → Bluebonnet** (create a listing from a catalogue product, then explicitly *Publier*). StartEntreprise
+then calls this API's private management namespace, `/api/internal/v1/management/*`, which:
+
+- is machine-to-machine only (HTTP Basic, client `startentreprise-bluebonnet-management` + a dedicated secret; never the
+  storefront's stock client, a user session or cookies);
+- is reached only over the private Docker network `sales-channels`, shared by `bluebonnet-api` and StartEntreprise's `api`
+  (nothing else joins it; PostgreSQL never does);
+- is refused publicly by Caddy on both hosts (`/api/internal/*`, `/api/api/*`), and the storefront proxy only forwards `/api/v1/*`.
+
+Each product row is keyed by `sales_channel_listing_id` and only ever moves forward in `listing_version`: a delayed retry of an
+older version gets `409 STALE_LISTING_VERSION` and changes nothing. Unpublishing sets `published=false, active=false` and keeps
+the row; republishing reuses it. Stock is never stored here — availability is still read live from StartEntreprise.
+
+### Enabling it
+
+```bash
+docker network create sales-channels                  # once per host
+SECRET=$(openssl rand -hex 32)
+# Bluebonnet side (/opt/bluebonnet-maroc-secrets/bluebonnet.env):
+#   BLUEBONNET_MANAGEMENT_ENABLED=true
+#   BLUEBONNET_MANAGEMENT_CLIENT_SECRET=$SECRET
+#   BLUEBONNET_MANAGEMENT_ORGANIZATION_ID=<UUID of the StartEntreprise organization that owns the shop>
+#   IMAGE_HOST=startentreprise.ma                       # listing images are served by StartEntreprise
+# StartEntreprise side (/opt/startentreprise/secrets/docker.env):
+#   BLUEBONNET_MANAGEMENT_API_URL=http://bluebonnet-api:4000
+#   BLUEBONNET_MANAGEMENT_CLIENT_SECRET=$SECRET
+cd /opt/bluebonnet-maroc && bb up -d --build bluebonnet-api bluebonnet-frontend
+cd /opt/startentreprise/app && dc up -d api caddy
+# Private reachability check (from StartEntreprise's API container), and the public refusal:
+dc exec api bash -c 'exec 3<>/dev/tcp/bluebonnet-api/4000 && echo reachable'                                                  # reachable
+curl -s -o /dev/null -w "%{http_code}\n" https://api.bluebonnetmaroc.com/api/internal/v1/management/connection               # 404
+curl -s -o /dev/null -w "%{http_code}\n" https://bluebonnetmaroc.com/api/api/internal/v1/management/connection               # 404
+```
+
+The organization UUID is shown in StartEntreprise's URL (`/dashboard/organizations/<uuid>/…`). Only that organization can
+connect the channel; any other gets `CHANNEL_BOUND_TO_ANOTHER_ORGANIZATION`.
+
+### The temporary `tasse` product
+
+A product inserted manually before this sprint has no `sales_channel_listing_id` (a "legacy" row). It is left untouched: it stays
+visible if it is published, and nothing deletes or rewrites it automatically. Identify it with:
+
+```bash
+docker exec bluebonnet-postgres psql -U bluebonnet -d bluebonnet -c \
+  "select id, slug, name_fr, startentreprise_catalogue_id, published from products where sales_channel_listing_id is null;"
+```
+
+To replace it with a managed listing (recommended):
+
+1. Hide the manual row (it keeps its id and history):
+   `update products set published = false, active = false where slug = 'tasse' and sales_channel_listing_id is null;`
+2. If StartEntreprise will publish the **same catalogue item** or reuse the slug `tasse`, free those unique values on the legacy
+   row first, otherwise the publication is refused with `INVALID_PRODUCT` (visible as *Action requise*):
+   `update products set slug = 'tasse-legacy', startentreprise_catalogue_id = gen_random_uuid() where slug = 'tasse' and sales_channel_listing_id is null;`
+3. In StartEntreprise → Canaux de vente → Bluebonnet: *Nouvelle annonce*, choose the product, set price/category/images, *Publier*.
+
+To simply remove it from the shop, step 1 is enough. Carts that contained it show it as unavailable; past orders keep their snapshot.
+
 ## Backups and restore
 
 `bluebonnet-backup` creates a compressed backup immediately and then daily by default. Backups are

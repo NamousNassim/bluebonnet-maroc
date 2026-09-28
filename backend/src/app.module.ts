@@ -15,13 +15,17 @@ import { HealthController } from "./health.controller";
 import { StartEntrepriseModule } from "./integrations/startentreprise/startentreprise.module";
 import { OrderService } from "./orders/order.service";
 import { PrismaService } from "./prisma/prisma.service";
+import { ManagementController } from "./management/management.controller";
+import { ManagementAuthGuard } from "./management/management-auth.guard";
+import { ManagementService } from "./management/management.service";
 
 @Module({
   imports: [ConfigModule, StartEntrepriseModule],
-  controllers: [HealthController, CatalogController, CartController, CheckoutController],
+  controllers: [HealthController, CatalogController, CartController, CheckoutController, ManagementController],
   providers: [
     { provide: APP_FILTER, useClass: ErrorFilter },
     PrismaService, AvailabilityService, CatalogService, CartService, CheckoutService, ReservationOrchestrator, OrderService,
+    ManagementAuthGuard, ManagementService,
   ],
 })
 export class AppModule implements NestModule {

@@ -79,7 +79,7 @@ export class CatalogService {
     return {
       ...summary(row, availability.get(row.startEntrepriseCatalogueId)),
       sku: row.sku, descriptionFr: row.descriptionFr, descriptionAr: row.descriptionAr,
-      images: row.images.map(imageView), seoTitle: row.seoTitle, seoDescription: row.seoDescription, updatedAt: row.updatedAt.toISOString(),
+      images: row.images.map(imageView), seoTitle: row.seoTitleFr, seoDescription: row.seoDescriptionFr, updatedAt: row.updatedAt.toISOString(),
     };
   }
 
